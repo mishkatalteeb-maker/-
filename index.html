@@ -2,606 +2,555 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>مولّد قصص سوق بيشه</title>
-    
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- Core Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react": "https://esm.sh/react@18.2.0",
+    "@google/genai": "https://esm.sh/@google/genai",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
 </script>
 </head>
   <body class="bg-stone-900">
     <div id="root"></div>
+    <script type="module">
+import React, { useState, useCallback, useRef, useEffect, forwardRef } from 'react';
+import ReactDOM from 'react-dom/client';
+import { GoogleGenAI, Modality } from "@google/genai";
 
-    <script type="text/babel" data-presets="react,typescript">
+// --- START OF constants.ts ---
+const LOGO_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAARJSURBVHhe7ZxLaxtBFIb/jQ2iCDvYdhGrhVhqIYiCiLhRhAvxovgB3HjRTRQRV1ylSAiCRUoFERVFLC1BEPDiDwh44YVWBFGqNFislaCFWlRsY/GZ4cjYkM2ZnZ29HMiDfsnZnflmzp3d2RlkMplMJpPJZDKZTCazg6CgqG3p0qX/f0JwcPDtjo6OdQoLC38cHR39OQj+h4iIiBUtLS0/Dw4O/t3a2vrD6OjomREREbNyuRwRjUYfVqvV3fF4/P7g4OCf3d3dEVEsFsdEIpGFer1+pNVq/Q8ajcZ9+Xz++52dndpisfgK5XJ5V1FREfqCggL3N83k5OQcBoPhtc1m8zEWi+VgMpn8x+FweNvl8vU0m83tK5XKd0RjLwJcXFwKzs7OHldXV18wGAyOxsfHv2lpaflWS0vLI5PJ5IZarb5wcnLyJ4vF4hJYrVYvKysry9PS0n4rLS1NkZqayp2dnekcHR0pAPf393N+fl5sNptzuVzO6elptre305/lcvns4eHhB+vr611ZWVl+k5KS/FRaWvqDgoKCl4eHh38dHh7+T2NjY88KkCQnJ+fQ6/W7A4HAWw6H44pSqfxjQkLCAwYDAw8TExNrxcTEfEpPT8/gV5Kenu5YLFZPTk5OrdbW1nKj0fj/8fHx/lIsFn+Vm5v723A4/BWAer2+X3p6ehuFQmGpr6/fNjIy8nFmZuYzwWAwsNfr9R4bG/t5U1NTvVwu3waAeDy+W1hYeG9oaOgnzWbzKw6H4z35fP5lU1NT0mq1PjYwMPA+KSkp/2lpadkVCoV2RUVFfU1NTbNyuXxjMpn8l/T09EaDwWDl5ub+XVBQ8GNjY+MfLS0tW1EU/dXn8w2lUvnfubm5HwwGg+VyuVw+n28sl8vLcrncx+PxrUql8j4rK+s1k8l8xefzXb7//b1cLq/b7fbfDAaDn7Kzs/8sLS2tFhcX/76goOCi3+/fV1RUfCMvL/9bVVX1/enTp81oNPp0fn7+z62trdYvLy//qFQqv1YoFL6anZ39aWlp6d2ysrKvNTU1RUVFRX9SqVSerFarX6SkpHyWk5PzWmlp6ZVSqfwXwWDwj+Fw+PuhoaEf2dra+k1GRoZMJpM/Li8vf62qqvpXqVT6h7S0tDdVVVV/TUxM/D09Pf3r6enp78VicW4ymfzR2dn5j2azeVVVVfVvTU3Nf1tbW1O1Wn05OTn5Gz6fv19bW7tSX1//+dDQ0Gvr6+vL4XAYn52d/XVoaOi9np6e53Q6/Z2rq+uX4eHhD3p6epybm5v/mJKS8ktbW9tSXV19kcvlfpGcnHxXWVn5u6ampryqqqqPtbW13+bm5ny32/07uVz+l8lkMplMJpPJZDKZ/F/yb9g9L3QYj0YVAAAAAElFTSuQmCC';
+const QR_CODE_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAJAAAACQAQMAAADdiHD7AAAABlBMVEX///8AAABVwtN+AAABGklEQVRIie2WsQ3EIAxEx+yBcgMsl5Ld0A5kByDEpQvYg0I4AAlxJ3FkQ0xEI8HwK4I/C/5+yZ/kXZbMhVwU5hH39Bs3bty4ceOG4bbd4vFBrOP8S86ePOp2Dq0b6lG+sRz6sR5nJ+dOTk7OaQ539u24d35TzP15fE1PeXn+epl6PZ0DqLup7uU5T1PU1fL5g3qWnJ+p6en8wV4Wp6eU/Rr2/hL1PD1nIV60e608PVDfqO7lQY8e/yv15N1a+vW4P/sUerW/r0e9Txu8b/Loe/zT3n3pP94a6qEPr51e6kE/d9BvqH/3+pP4/4v6/kf9P439v1z/z+lfBwzHWyPIfyD+D0J/YPoPgv/D+D8I/QPh/yD+D0L/YPoPgv/D+D/s2vG8W0O8d+PGjRs3bty4sc22S1YmBVx1k7k2AAAAAElFTSuQmCC';
 
-      // This is an async IIFE (Immediately Invoked Function Expression).
-      // It's used to load the @google/genai library, which is an ES module,
-      // and then run the entire application logic.
-      (async () => {
-        // Dynamically import the ES module for Gemini
-        const genAIModule = await import("https://esm.sh/@google/genai");
-        const { GoogleGenAI, Modality } = genAIModule;
+// --- START OF services/geminiService.ts ---
+const fileToBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result;
+      // Remove the data:image/...;base64, prefix
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = (error) => reject(error);
+  });
 
-        // --- START: constants.ts ---
-        const LOGO_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAARJSURBVHhe7ZxLaxtBFIb/jQ2iCDvYdhGrhVhqIYiCiLhRhAvxovgB3HjRTRQRV1ylSAiCRUoFERVFLC1BEPDiDwh44YVWBFGqNFislaCFWlRsY/GZ4cjYkM2ZnZ29HMiDfsnZnflmzp3d2RlkMplMJpPJZDKZTCazg6CgqG3p0qX/f0JwcPDtjo6OdQoLC38cHR39OQj+h4iIiBUtLS0/Dw4O/t3a2vrD6OjomREREbNyuRwRjUYfVqvV3fF4/P7g4OCf3d3dEVEsFsdEIpGFer1+pNVq/Q8ajcZ9+Xz++52dndpisfgK5XJ5V1FREfqCggL3N83k5OQcBoPhtc1m8zEWi+VgMpn8x+FweNvl8vU0m83tK5XKd0RjLwJcXFwKzs7OHldXV18wGAyOxsfHv2lpaflWS0vLI5PJ5IZarb5wcnLyJ4vF4hJYrVYvKysry9PS0n4rLS1NkZqayp2dnekcHR0pAPf393N+fl5sNptzuVzO6elptre305/lcvns4eHhB+vr611ZWVl+k5KS/FRaWvqDgoKCl4eHh38dHh7+T2NjY88KkCQnJ+fQ6/W7A4HAWw6H44pSqfxjQkLCAwYDAw8TExNrxcTEfEpPT8/gV5Kenu5YLFZPTk5OrdbW1nKj0fj/8fHx/lIsFn+Vm5v723A4/BWAer2+X3p6ehuFQmGpr6/fNjIy8nFmZuYzwWAwsNfr9R4bG/t5U1NTvVwu3waAeDy+W1hYeG9oaOgnzWbzKw6H4z35fP5lU1NT0mq1PjYwMPA+KSkp/2lpadkVCoV2RUVFfU1NTbNyuXxjMpn8l/T09EaDwWDl5ub+XVBQ8GNjY+MfLS0tW1EU/dXn8w2lUvnfubm5HwwGg+VyuVw+n28sl8vLcrncx+PxrUql8j4rK+s1k8l8xefzXb7//b1cLq/b7fbfDAaDn7Kzs/8sLS2tFhcX/76goOCi3+/fV1RUfCMvL/9bVVX1/enTp81oNPp0fn7+z62trdYvLy//qFQqv1YoFL6anZ39aWlp6d2ysrKvNTU1RUVFRX9SqVSerFarX6SkpHyWk5PzWmlp6ZVSqfwXwWDwj+Fw+PuhoaEf2dra+k1GRoZMJpM/Li8vf62qqvpXqVT6h7S0tDdVVVV/TUxM/D09Pf3r6enp78VicW4ymfzR2dn5j2azeVVVVfVvTU3Nf1tbW1O1Wn05OTn5Gz6fv19bW7tSX1//+dDQ0Gvr6+vL4XAYn52d/XVoaOi9np6e53Q6/Z2rq+uX4eHhD3p6epybm5v/mJKS8ktbW9tSXV19kcvlfpGcnHxXWVn5u6ampryqqqqPtbW13+bm5ny32/07uVz+l8lkMplMJpPJZDKZ/F/yb9g9L3QYj0YVAAAAAElFTSuQmCC';
-        const QR_CODE_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAJAAAACQAQMAAADdiHD7AAAABlBMVEX///8AAABVwtN+AAABGklEQVRIie2WsQ3EIAxEx+yBcgMsl5Ld0A5kByDEpQvYg0I4AAlxJ3FkQ0xEI8HwK4I/C/5+yZ/kXZbMhVwU5hH39Bs3bty4ceOG4bbd4vFBrOP8S86ePOp2Dq0b6lG+sRz6sR5nJ+dOTk7OaQ539u24d35TzP15fE1PeXn+epl6PZ0DqLup7uU5T1PU1fL5g3qWnJ+p6en8wV4Wp6eU/Rr2/hL1PD1nIV60e608PVDfqO7lQY8e/yv15N1a+vW4P/sUerW/r0e9Txu8b/Loe/zT3n3pP94a6qEPr51e6kE/d9BvqH/3+pP4/4v6/kf9P439v1z/z+lfBwzHWyPIfyD+D0J/YPoPgv/D+D8I/QPh/yD+D0L/YPoPgv/D+D/s2vG8W0O8d+PGjRs3bty4sc22S1YmBVx1k7k2AAAAAElFTSuQmCC';
-        // --- END: constants.ts ---
+const getMimeType = (file) => {
+    if (file.type && (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp')) {
+        return file.type;
+    }
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+            return 'image/jpeg';
+        case 'png':
+            return 'image/png';
+        case 'webp':
+            return 'image/webp';
+        default:
+            return 'image/jpeg';
+    }
+};
 
-        // --- START: services/geminiService.ts ---
-        const fileToBase64 = (file) =>
-          new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-              const result = reader.result;
-              // Remove the data:image/...;base64, prefix
-              resolve(result.split(',')[1]);
-            };
-            reader.onerror = (error) => reject(error);
-          });
+const placeProductInScene = async (imageFile) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const b64Data = await fileToBase64(imageFile);
+  const mimeType = getMimeType(imageFile);
 
-        const getMimeType = (file) => {
-            if (file.type && (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp')) {
-                return file.type;
-            }
-            const extension = file.name.split('.').pop()?.toLowerCase();
-            switch (extension) {
-                case 'jpg':
-                case 'jpeg':
-                    return 'image/jpeg';
-                case 'png':
-                    return 'image/png';
-                case 'webp':
-                    return 'image/webp';
-                default:
-                    // Default to JPEG if type is unknown or unsupported, as it's widely accepted.
-                    return 'image/jpeg';
-            }
-        };
-        
-        const placeProductInScene = async (imageFile) => {
-          // This relies on the hosting environment providing the API key.
-          if (!process.env.API_KEY) {
-            throw new Error('API Key is not configured in the environment.');
-          }
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-          const b64Data = await fileToBase64(imageFile);
-          const mimeType = getMimeType(imageFile);
+  const prompt = `Create a professional studio-style image of the uploaded product. Keep the product exactly as it is — no changes to text, colors, or design details. Place it in a dark brown gradient background with soft lighting transitions. Use professional studio lighting that highlights the product’s texture and materials, with realistic soft shadows, depth, and a three-dimensional look. The result should appear clean, elegant, and luxurious — like a premium product photo captured in a high-end studio.`;
 
-          const prompt = `Create a professional studio-style image of the uploaded product. Keep the product exactly as it is — no changes to text, colors, or design details. Place it in a dark brown gradient background with soft lighting transitions. Use professional studio lighting that highlights the product’s texture and materials, with realistic soft shadows, depth, and a three-dimensional look. The result should appear clean, elegant, and luxurious — like a premium product photo captured in a high-end studio.`;
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-image',
+    contents: {
+      parts: [
+        {
+          inlineData: {
+            data: b64Data,
+            mimeType: mimeType,
+          },
+        },
+        {
+          text: prompt,
+        },
+      ],
+    },
+    config: {
+      responseModalities: [Modality.IMAGE],
+    },
+  });
 
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: {
-              parts: [
-                {
-                  inlineData: {
-                    data: b64Data,
-                    mimeType: mimeType,
-                  },
-                },
-                {
-                  text: prompt,
-                },
-              ],
+  for (const part of response.candidates[0].content.parts) {
+    if (part.inlineData) {
+      return part.inlineData.data;
+    }
+  }
+
+  throw new Error('Image processing failed: No image data returned.');
+};
+
+// --- START OF components/Icons.tsx ---
+const UploadIcon = () => (
+  React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-10 w-10 text-stone-500", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 1.5 },
+    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" }),
+    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 12v9" }),
+    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M15 15l-3-3-3 3" })
+  )
+);
+
+const DownloadIcon = () => (
+  React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 },
+    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" })
+  )
+);
+
+const SparklesIcon = () => (
+  React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 },
+    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 3v4M3 5h4M6 17v4m-2-2h4m1-9l1.06-1.06a5.5 5.5 0 017.78 7.78l-1.06 1.06M16 5l1.06 1.06a5.5 5.5 0 007.78 7.78l-1.06 1.06M9 17l1.06-1.06a5.5 5.5 0 00-7.78-7.78l-1.06 1.06" })
+  )
+);
+
+const XCircleIcon = () => (
+  React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6", fill: "currentColor", viewBox: "0 0 20 20" },
+    React.createElement('path', { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z", clipRule: "evenodd" })
+  )
+);
+
+// --- START OF components/Loader.tsx ---
+const Loader = () => {
+  return (
+    React.createElement('svg', {
+      className: "animate-spin h-5 w-5 text-current",
+      xmlns: "http://www.w3.org/2000/svg",
+      fill: "none",
+      viewBox: "0 0 24 24"
+    },
+      React.createElement('circle', {
+        className: "opacity-25",
+        cx: "12",
+        cy: "12",
+        r: "10",
+        stroke: "currentColor",
+        strokeWidth: "4"
+      }),
+      React.createElement('path', {
+        className: "opacity-75",
+        fill: "currentColor",
+        d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      })
+    )
+  );
+};
+
+// --- START OF components/ImageUpload.tsx ---
+const ImageUpload = ({ onImageSelect, previewUrl, onClear, isLoading }) => {
+  const [internalPreview, setInternalPreview] = useState(null);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!previewUrl) {
+      setInternalPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } else {
+        setInternalPreview(previewUrl);
+    }
+  }, [previewUrl]);
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setInternalPreview(reader.result);
+        onImageSelect(file);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setInternalPreview(null);
+      onImageSelect(null);
+    }
+  };
+
+  const handleClick = () => {
+    if (isLoading) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    setInternalPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    onImageSelect(null);
+    if (onClear) {
+      onClear();
+    }
+  };
+
+  return (
+    React.createElement('div', {
+      onClick: handleClick,
+      className: `w-full p-4 border-2 border-dashed border-stone-600 rounded-lg transition-all duration-300 min-h-[150px] flex items-center justify-center ${isLoading ? 'cursor-wait bg-stone-700/50' : 'cursor-pointer hover:border-amber-400 hover:bg-stone-700/50'}`
+    },
+      React.createElement('input', {
+        type: "file",
+        ref: fileInputRef,
+        onChange: handleFileChange,
+        className: "hidden",
+        accept: "image/png, image/jpeg, image/webp",
+        disabled: isLoading
+      }),
+      isLoading ? (
+        React.createElement('div', { className: "flex flex-col items-center text-stone-400" },
+          React.createElement(Loader, null),
+          React.createElement('p', { className: "mt-2" }, "جاري المعالجة...")
+        )
+      ) : internalPreview ? (
+        React.createElement('div', { className: "relative group flex flex-col items-center text-center" },
+          React.createElement('img', { src: internalPreview, alt: "Preview", className: "max-h-48 rounded-md object-contain" }),
+          React.createElement('p', { className: "mt-2 text-xs text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity" }, "لتغيير الصورة، انقر هنا."),
+          onClear && (
+            React.createElement('button', {
+              onClick: handleClear,
+              className: "absolute -top-2 -right-2 bg-stone-800 rounded-full text-stone-400 hover:text-white hover:bg-red-600 transition-all duration-200",
+              'aria-label': "إزالة الصورة"
             },
-            config: {
-              responseModalities: [Modality.IMAGE],
-            },
-          });
+              React.createElement(XCircleIcon, null)
+            )
+          )
+        )
+      ) : (
+        React.createElement('div', { className: "flex flex-col items-center justify-center text-center text-stone-400 py-8" },
+          React.createElement(UploadIcon, null),
+          React.createElement('p', { className: "mt-2 font-semibold" }, "انقر هنا لرفع الصورة"),
+          React.createElement('p', { className: "text-sm" }, "PNG, JPG, WEBP")
+        )
+      )
+    )
+  );
+};
 
-          for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-              return part.inlineData.data;
-            }
-          }
+// --- START OF components/StoryPreview.tsx ---
+const StoryPreview = forwardRef(
+  ({ productImage, productName, logoImage, qrCodeImage }, ref) => {
+    const showPlaceholder = !productImage || !productName;
 
-          throw new Error('Image processing failed: No image data returned.');
-        };
-        // --- END: services/geminiService.ts ---
+    const finalLogo = logoImage || `data:image/png;base64,${LOGO_BASE64}`;
+    const finalQrCode = qrCodeImage || `data:image/png;base64,${QR_CODE_BASE64}`;
 
-        // --- START: components/Icons.tsx ---
-        const UploadIcon = () => (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 12v9" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-3-3-3 3" />
-          </svg>
-        );
+    return (
+      React.createElement('div', { className: "flex flex-col items-center gap-4 w-full" },
+        productImage && React.createElement('p', { className: "text-lg font-semibold text-stone-300" }, "تم إنشاء المعاينة بنجاح!"),
+        React.createElement('div', {
+          ref: ref,
+          className: "relative w-[300px] h-[533px] bg-gradient-to-b from-[#422d1a] to-[#1c1917] text-white overflow-hidden shadow-2xl rounded-xl"
+        },
+          showPlaceholder ? (
+            React.createElement(React.Fragment, null,
+              React.createElement('div', { className: "w-full h-full border-2 border-dashed border-stone-600/50 rounded-xl relative overflow-hidden" },
+                React.createElement('div', { className: "absolute top-10 inset-x-0 mx-auto w-24 h-24 bg-stone-600/50 rounded-full animate-pulse" }),
+                React.createElement('div', { className: "absolute top-40 bottom-48 inset-x-0 mx-auto w-[80%] bg-stone-600/50 rounded-lg animate-pulse" }),
+                React.createElement('div', { className: "absolute bottom-[120px] left-0 right-0 px-4 flex flex-col items-center gap-3" },
+                    React.createElement('div', { className: "h-px bg-stone-600/50 rounded w-2/3 animate-pulse" }),
+                    React.createElement('div', { className: "h-10 bg-stone-600/50 rounded w-3/4 animate-pulse" })
+                ),
+                React.createElement('div', { className: "absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center bg-stone-800/20" },
+                    React.createElement('div', { className: "w-20 h-20 bg-stone-600/50 rounded-lg animate-pulse" }),
+                    React.createElement('div', { className: "flex flex-col items-end gap-2" },
+                        React.createElement('div', { className: "h-4 bg-stone-600/50 rounded w-24 animate-pulse" }),
+                        React.createElement('div', { className: "h-4 bg-stone-600/50 rounded w-32 animate-pulse" })
+                    )
+                )
+              ),
+              React.createElement('div', { className: "absolute inset-0 flex items-center justify-center" },
+                React.createElement('div', { className: "text-center text-stone-500 px-4" },
+                  React.createElement('h3', { className: "text-xl font-bold mb-2" }, "معاينة التصميم"),
+                  React.createElement('p', { className: "text-sm" }, "ستظهر نتيجة تصميمك هنا بعد الإنشاء.")
+                )
+              )
+            )
+          ) : (
+            React.createElement(React.Fragment, null,
+              React.createElement('div', { className: "absolute inset-0 bg-gradient-to-br from-[#5c3d2e] via-[#422d1a] to-[#1c1917]" }),
+              React.createElement('div', { className: "absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" }),
+              React.createElement('div', { className: "absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-3xl" }),
+              React.createElement('div', { className: "absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-yellow-500/10 to-transparent rounded-full blur-3xl" }),
+              
+              React.createElement('div', { className: "absolute top-10 inset-x-0 z-20 flex justify-center" },
+                React.createElement('img', { 
+                  src: finalLogo, 
+                  alt: "شعار سوق بيشه", 
+                  className: "w-24 h-24 object-cover rounded-full drop-shadow-lg"
+                })
+              ),
+              
+              React.createElement('div', { className: "absolute top-36 bottom-32 inset-x-0 flex flex-col items-stretch justify-center p-4 gap-4 z-10" },
+                React.createElement('div', { className: "flex-1 flex items-center justify-center min-h-0 relative" },
+                  React.createElement('div', { className: "absolute w-[90%] h-[90%] bg-gradient-radial from-amber-400/20 via-transparent to-transparent rounded-[50%] blur-3xl opacity-80" }),
+                  React.createElement('img', {
+                    src: productImage,
+                    alt: productName,
+                    className: "max-w-full max-h-full object-contain drop-shadow-2xl relative z-10 filter brightness-110 contrast-110"
+                  })
+                ),
+                React.createElement('div', { className: "flex-shrink-0 text-center flex flex-col items-center" },
+                  React.createElement('div', { className: "w-2/3 h-[2px] bg-gradient-to-r from-amber-400 to-yellow-500 mb-4 rounded-full" }),
+                  React.createElement('h1', { 
+                    className: "text-4xl font-black text-white drop-shadow-xl leading-tight",
+                    style: { fontWeight: 900, textShadow: '2px 2px 5px rgba(0,0,0,0.5)' }
+                  }, productName)
+                )
+              ),
 
-        const DownloadIcon = () => (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-        );
+              React.createElement('div', { className: "absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center z-20 bg-black/20 backdrop-blur-sm border-t border-white/10" },
+                React.createElement('img', { 
+                  src: finalQrCode, 
+                  alt: "QR Code", 
+                  className: "w-20 h-20 rounded-lg shadow-lg object-contain bg-white p-1" 
+                }),
+                React.createElement('div', { className: "text-right flex flex-col items-end" },
+                  React.createElement('h3', { className: "font-bold text-amber-100/90 text-lg" }, "سوق بيشه المركزي"),
+                  React.createElement('p', { className: "text-base text-white/90 -mt-1" }, "شرق الأحمدي"),
+                  React.createElement('p', { 
+                    className: "text-lg font-semibold tracking-wider text-white/90 mt-1", 
+                    style: { textShadow: '1px 1px 3px rgba(0,0,0,0.5)' }
+                  }, 
+                    React.createElement('span', { dir: 'ltr', style: { display: 'inline-block' } }, '50703093 - 94020643')
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+  }
+);
 
-        const SparklesIcon = () => (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m1-9l1.06-1.06a5.5 5.5 0 017.78 7.78l-1.06 1.06M16 5l1.06 1.06a5.5 5.5 0 007.78 7.78l-1.06 1.06M9 17l1.06-1.06a5.5 5.5 0 00-7.78-7.78l-1.06 1.06" />
-          </svg>
-        );
 
-        const XCircleIcon = () => (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-        );
-        // --- END: components/Icons.tsx ---
+// --- START OF App.tsx ---
+function App() {
+  const [productImageFile, setProductImageFile] = useState(null);
+  const [productName, setProductName] = useState('');
+  
+  const [processedProductImage, setProcessedProductImage] = useState(null);
+  const [processedLogo, setProcessedLogo] = useState(null);
+  const [processedQrCode, setProcessedQrCode] = useState(null);
 
-        // --- START: components/Loader.tsx ---
-        const Loader = () => {
-          return (
-            <svg
-              className="animate-spin h-5 w-5 text-current"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          );
-        };
-        // --- END: components/Loader.tsx ---
-        
-        // --- START: components/ImageUpload.tsx ---
-        const ImageUpload = ({ onImageSelect, previewUrl, onClear, isLoading }) => {
-          const [internalPreview, setInternalPreview] = React.useState(null);
-          const fileInputRef = React.useRef(null);
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+  const [isProcessingLogo, setIsProcessingLogo] = useState(false);
+  const [isProcessingQrCode, setIsProcessingQrCode] = useState(false);
 
-          React.useEffect(() => {
-            if (!previewUrl) {
-              setInternalPreview(null);
-              if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-              }
-            } else {
-                setInternalPreview(previewUrl);
-            }
-          }, [previewUrl]);
+  const [error, setError] = useState(null);
+  const storyRef = useRef(null);
 
-          const handleFileChange = (event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                setInternalPreview(reader.result);
-                onImageSelect(file);
-              };
-              reader.readAsDataURL(file);
-            } else {
-              setInternalPreview(null);
-              onImageSelect(null);
-            }
-          };
+  useEffect(() => {
+    const savedLogo = localStorage.getItem('bisha-market-logo');
+    if (savedLogo) setProcessedLogo(savedLogo);
 
-          const handleClick = () => {
-            if (isLoading) return;
-            fileInputRef.current?.click();
-          };
+    const savedQrCode = localStorage.getItem('bisha-market-qrcode');
+    if (savedQrCode) setProcessedQrCode(savedQrCode);
+  }, []);
 
-          const handleClear = (e) => {
-            e.stopPropagation();
-            setInternalPreview(null);
-            if (fileInputRef.current) fileInputRef.current.value = "";
-            onImageSelect(null);
-            if (onClear) {
-              onClear();
-            }
-          };
+  const handleGenerateClick = useCallback(async () => {
+    if (!productImageFile || !productName) {
+      setError('الرجاء رفع صورة المنتج وكتابة اسمه.');
+      return;
+    }
 
-          return (
-            <div
-              onClick={handleClick}
-              className={`w-full p-4 border-2 border-dashed border-stone-600 rounded-lg transition-all duration-300 min-h-[150px] flex items-center justify-center ${isLoading ? 'cursor-wait bg-stone-700/50' : 'cursor-pointer hover:border-amber-400 hover:bg-stone-700/50'}`}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/png, image/jpeg, image/webp"
-                disabled={isLoading}
-              />
-              {isLoading ? (
-                <div className="flex flex-col items-center text-stone-400">
-                  <Loader />
-                  <p className="mt-2">جاري المعالجة...</p>
-                </div>
-              ) : internalPreview ? (
-                <div className="relative group flex flex-col items-center text-center">
-                  <img src={internalPreview} alt="Preview" className="max-h-48 rounded-md object-contain" />
-                  <p className="mt-2 text-xs text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity">لتغيير الصورة، انقر هنا.</p>
-                  {onClear && (
-                    <button
-                      onClick={handleClear}
-                      className="absolute -top-2 -right-2 bg-stone-800 rounded-full text-stone-400 hover:text-white hover:bg-red-600 transition-all duration-200"
-                      aria-label="إزالة الصورة"
-                    >
-                      <XCircleIcon />
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center text-stone-400 py-8">
-                  <UploadIcon />
-                  <p className="mt-2 font-semibold">انقر هنا لرفع الصورة</p>
-                  <p className="text-sm">PNG, JPG, WEBP</p>
-                </div>
-              )}
-            </div>
-          );
-        };
-        // --- END: components/ImageUpload.tsx ---
-        
-        // --- START: components/StoryPreview.tsx ---
-        const StoryPreview = React.forwardRef(
-          ({ productImage, productName, logoImage, qrCodeImage }, ref) => {
-            const showPlaceholder = !productImage || !productName;
+    setIsGeneratingStory(true);
+    setError(null);
+    setProcessedProductImage(null);
 
-            const finalLogo = logoImage || `data:image/png;base64,${LOGO_BASE64}`;
-            const finalQrCode = qrCodeImage || `data:image/png;base64,${QR_CODE_BASE64}`;
-
-            return (
-              <div className="flex flex-col items-center gap-4 w-full">
-                {productImage && <p className="text-lg font-semibold text-stone-300">تم إنشاء المعاينة بنجاح!</p>}
-                <div
-                  ref={ref}
-                  className="relative w-[300px] h-[533px] bg-gradient-to-b from-[#422d1a] to-[#1c1917] text-white overflow-hidden shadow-2xl rounded-xl"
-                >
-                  {showPlaceholder ? (
-                    <>
-                      <div className="w-full h-full border-2 border-dashed border-stone-600/50 rounded-xl relative overflow-hidden">
-                        {/* Skeleton for Logo */}
-                        <div className="absolute top-10 inset-x-0 mx-auto w-24 h-24 bg-stone-600/50 rounded-full animate-pulse"></div>
-                        
-                        {/* Skeleton for Image */}
-                        <div className="absolute top-40 bottom-48 inset-x-0 mx-auto w-[80%] bg-stone-600/50 rounded-lg animate-pulse"></div>
-                        
-                        {/* Skeleton for Title Area */}
-                        <div className="absolute bottom-[120px] left-0 right-0 px-4 flex flex-col items-center gap-3">
-                            <div className="h-px bg-stone-600/50 rounded w-2/3 animate-pulse"></div>
-                            <div className="h-10 bg-stone-600/50 rounded w-3/4 animate-pulse"></div>
-                        </div>
-                        
-                        {/* Skeleton for Footer */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center bg-stone-800/20">
-                            <div className="w-20 h-20 bg-stone-600/50 rounded-lg animate-pulse"></div>
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="h-4 bg-stone-600/50 rounded w-24 animate-pulse"></div>
-                                <div className="h-4 bg-stone-600/50 rounded w-32 animate-pulse"></div>
-                            </div>
-                        </div>
-                      </div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center text-stone-500 px-4">
-                          <h3 className="text-xl font-bold mb-2">معاينة التصميم</h3>
-                          <p className="text-sm">ستظهر نتيجة تصميمك هنا بعد الإنشاء.</p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Backgrounds */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#5c3d2e] via-[#422d1a] to-[#1c1917]"></div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                      <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-3xl"></div>
-                      <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-yellow-500/10 to-transparent rounded-full blur-3xl"></div>
-                      
-                      {/* Logo */}
-                      <div className="absolute top-10 inset-x-0 z-20 flex justify-center">
-                        <img 
-                          src={finalLogo} 
-                          alt="شعار سوق بيشه" 
-                          className="w-24 h-24 object-cover rounded-full drop-shadow-lg"
-                        />
-                      </div>
-                      
-                      {/* Main Content Area (Image + Name) */}
-                      <div className="absolute top-36 bottom-32 inset-x-0 flex flex-col items-stretch justify-center p-4 gap-4 z-10">
-                        {/* Image Container */}
-                        <div className="flex-1 flex items-center justify-center min-h-0 relative">
-                          <div className="absolute w-[90%] h-[90%] bg-gradient-radial from-amber-400/20 via-transparent to-transparent rounded-[50%] blur-3xl opacity-80"></div>
-                          <img
-                            src={productImage}
-                            alt={productName}
-                            className="max-w-full max-h-full object-contain drop-shadow-2xl relative z-10 filter brightness-110 contrast-110"
-                          />
-                        </div>
-                         {/* Product Name Container */}
-                        <div className="flex-shrink-0 text-center flex flex-col items-center">
-                            <div className="w-2/3 h-[2px] bg-gradient-to-r from-amber-400 to-yellow-500 mb-4 rounded-full"></div>
-                            <h1 
-                              className="text-4xl font-black text-white drop-shadow-xl leading-tight"
-                              style={{ fontWeight: 900, textShadow: '2px 2px 5px rgba(0,0,0,0.5)' }}
-                            >
-                              {productName}
-                            </h1>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center z-20 bg-black/20 backdrop-blur-sm border-t border-white/10">
-                        <img 
-                          src={finalQrCode} 
-                          alt="QR Code" 
-                          className="w-20 h-20 rounded-lg shadow-lg object-contain bg-white p-1" 
-                        />
-                        <div className="text-right flex flex-col items-end">
-                          <h3 className="font-bold text-amber-100/90 text-lg">سوق بيشه المركزي</h3>
-                          <p className="text-base text-white/90 -mt-1">شرق الأحمدي</p>
-                          <p 
-                            className="text-lg font-semibold tracking-wider text-white/90 mt-1" 
-                            style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.5)' }}
-                          >
-                            <span dir="ltr" style={{display: 'inline-block'}}>50703093 - 94020643</span>
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          }
-        );
-        // --- END: components/StoryPreview.tsx ---
-
-        // --- START: App.tsx ---
-        function App() {
-          const [productImageFile, setProductImageFile] = React.useState(null);
-          const [productName, setProductName] = React.useState('');
-          
-          const [processedProductImage, setProcessedProductImage] = React.useState(null);
-          const [processedLogo, setProcessedLogo] = React.useState(null);
-          const [processedQrCode, setProcessedQrCode] = React.useState(null);
-
-          const [isGeneratingStory, setIsGeneratingStory] = React.useState(false);
-          const [isProcessingLogo, setIsProcessingLogo] = React.useState(false);
-          const [isProcessingQrCode, setIsProcessingQrCode] = React.useState(false);
-
-          const [error, setError] = React.useState(null);
-          const storyRef = React.useRef(null);
-
-          React.useEffect(() => {
-            const savedLogo = localStorage.getItem('bisha-market-logo');
-            if (savedLogo) setProcessedLogo(savedLogo);
-
-            const savedQrCode = localStorage.getItem('bisha-market-qrcode');
-            if (savedQrCode) setProcessedQrCode(savedQrCode);
-          }, []);
-          
-          const fileToDataUrl = (file) =>
-            new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.readAsDataURL(file);
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = (error) => reject(error);
-            });
-
-          const handleGenerateClick = React.useCallback(async () => {
-            if (!productImageFile || !productName) {
-              setError('الرجاء رفع صورة المنتج وكتابة اسمه.');
-              return;
-            }
-
-            setIsGeneratingStory(true);
-            setError(null);
-            setProcessedProductImage(null);
-
-            try {
-              const b64Data = await placeProductInScene(productImageFile);
-              setProcessedProductImage(`data:image/png;base64,${b64Data}`);
-            } catch (err) {
-              console.error(err);
-              setError('حدث خطأ أثناء إنشاء صورة المنتج. تأكد من أن مفتاح API الخاص بك يعمل أو حاول مرة أخرى.');
-            } finally {
-              setIsGeneratingStory(false);
-            }
-          }, [productImageFile, productName]);
-          
-          const handleDownloadClick = React.useCallback(async () => {
-            if (!storyRef.current) return;
-            try {
-              const canvas = await html2canvas(storyRef.current, {
-                useCORS: true,
-                backgroundColor: null,
-                scale: 2, // Higher quality
-                logging: false,
-              });
-              const link = document.createElement('a');
-              link.download = `${productName.replace(/ /g, '_')}_story.png`;
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-            } catch (err) {
-              console.error("Failed to download image", err);
-              setError("لم نتمكن من تحميل الصورة. حاول مرة أخرى.");
-            }
-          }, [productName]);
-
-          const createSelectAndSaveHandler = (
-            setLoading,
-            setResult,
-            storageKey,
-            assetName
-          ) => async (file) => {
-            if (!file) return;
-            setLoading(true);
-            setError(null);
-            try {
-              const dataUrl = await fileToDataUrl(file);
-              setResult(dataUrl);
-              localStorage.setItem(storageKey, dataUrl);
-            } catch (err) {
-              console.error(`Error processing ${assetName}:`, err);
-              setError(`حدث خطأ أثناء معالجة ${assetName}. حاول مرة أخرى.`);
-            } finally {
-              setLoading(false);
-            }
-          };
-
-          const createClearHandler = (
-            setter,
-            storageKey
-          ) => () => {
-            setter(null);
-            localStorage.removeItem(storageKey);
-          };
-          
-          const handleLogoSelect = createSelectAndSaveHandler(setIsProcessingLogo, setProcessedLogo, 'bisha-market-logo', 'الشعار');
-          const handleQrCodeSelect = createSelectAndSaveHandler(setIsProcessingQrCode, setProcessedQrCode, 'bisha-market-qrcode', 'الباركود');
-          const handleClearLogo = createClearHandler(setProcessedLogo, 'bisha-market-logo');
-          const handleClearQrCode = createClearHandler(setProcessedQrCode, 'bisha-market-qrcode');
-
-          return (
-            <div className="min-h-screen bg-stone-900 text-stone-200 p-4 sm:p-8" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-              <div className="max-w-6xl mx-auto">
-                <header className="text-center mb-10 border-b border-stone-700 pb-4">
-                  <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500">مولّد قصص سوق بيشه</h1>
-                  <p className="text-stone-400 mt-2">صمم قصص انستغرام احترافية لمنتجاتك بضغطة زر</p>
-                </header>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-                  <div className="bg-stone-800/50 p-6 rounded-2xl shadow-lg border border-stone-700 flex flex-col gap-6">
-                                        
-                    <div>
-                      <label className="block text-lg font-semibold mb-2 text-amber-300">1. ارفع صورة المنتج (مطلوب)</label>
-                      <ImageUpload onImageSelect={setProductImageFile} />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="productName" className="block text-lg font-semibold mb-2 text-amber-300">2. اكتب اسم المنتج (مطلوب)</label>
-                      <input
-                        id="productName"
-                        type="text"
-                        value={productName}
-                        onChange={(e) => setProductName(e.target.value)}
-                        placeholder="مثال: عسل سدر جبلي"
-                        className="w-full bg-stone-700 border border-stone-600 rounded-lg p-3 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition duration-200 text-white placeholder-stone-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-lg font-semibold mb-2 text-amber-300">3. ارفع شعار المتجر (اختياري)</label>
-                      <p className="text-xs text-stone-400 mb-2 -mt-2">سيتم حفظ الشعار تلقائياً للمرات القادمة.</p>
-                      <ImageUpload onImageSelect={handleLogoSelect} previewUrl={processedLogo} onClear={handleClearLogo} isLoading={isProcessingLogo} />
-                    </div>
-
-                    <div>
-                      <label className="block text-lg font-semibold mb-2 text-amber-300">4. ارفع باركود الموقع (اختياري)</label>
-                      <p className="text-xs text-stone-400 mb-2 -mt-2">سيتم حفظ الباركود تلقائياً للمرات القادمة.</p>
-                      <ImageUpload onImageSelect={handleQrCodeSelect} previewUrl={processedQrCode} onClear={handleClearQrCode} isLoading={isProcessingQrCode} />
-                    </div>
-
-                    <button
-                      onClick={handleGenerateClick}
-                      disabled={isGeneratingStory || !productImageFile || !productName}
-                      className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-stone-900 font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg hover:from-amber-500 hover:to-yellow-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg mt-4"
-                    >
-                      {isGeneratingStory ? (
-                        <>
-                          <Loader />
-                          جاري المعالجة...
-                        </>
-                      ) : (
-                        <>
-                          <SparklesIcon />
-                          إنشاء القصة
-                        </>
-                      )}
-                    </button>
-                    {error && <p className="text-red-400 text-center">{error}</p>}
-                  </div>
-                  
-                  <div className="bg-stone-800/50 p-4 rounded-2xl shadow-lg border border-stone-700 flex flex-col justify-center items-center min-h-[60vh] gap-4">
-                    {isGeneratingStory ? (
-                      <div className="flex flex-col items-center text-center text-stone-400">
-                        <Loader />
-                        <p className="mt-4 text-lg">يقوم الذكاء الاصطناعي بإنشاء المشهد...</p>
-                        <p className="text-sm">قد يستغرق هذا بضع لحظات.</p>
-                      </div>
-                    ) : (
-                      <>
-                        <StoryPreview
-                          ref={storyRef}
-                          productImage={processedProductImage}
-                          productName={productName}
-                          logoImage={processedLogo}
-                          qrCodeImage={processedQrCode}
-                        />
-                        {processedProductImage && (
-                          <button
-                            onClick={handleDownloadClick}
-                            className="w-full max-w-xs mt-4 flex items-center justify-center gap-2 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-md"
-                          >
-                            <DownloadIcon />
-                            تحميل الصورة
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        }
-        // --- END: App.tsx ---
-
-        // --- START: index.tsx (Entry Point Logic) ---
-        const rootElement = document.getElementById('root');
-        if (!rootElement) {
-          throw new Error("Could not find root element to mount to");
-        }
-
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(
-          <React.StrictMode>
-            <App />
-          </React.StrictMode>
-        );
-        // --- END: index.tsx ---
-
-      })().catch(err => {
-        // Basic error handling in case the app fails to load
-        console.error("Failed to initialize the application:", err);
-        const rootElement = document.getElementById('root');
-        if (rootElement) {
-            rootElement.innerHTML = `<div style="color: red; padding: 20px; text-align: center; font-family: 'Tajawal', sans-serif;">
-              <h1 class="text-2xl font-bold">حدث خطأ فادح</h1>
-              <p>لم نتمكن من تحميل التطبيق. الرجاء التحقق من الكونسول لمزيد من التفاصيل.</p>
-            </div>`;
-        }
+    try {
+      const b64Data = await placeProductInScene(productImageFile);
+      setProcessedProductImage(`data:image/png;base64,${b64Data}`);
+    } catch (err) {
+      console.error(err);
+      setError('حدث خطأ أثناء إنشاء صورة المنتج. الرجاء المحاولة مرة أخرى.');
+    } finally {
+      setIsGeneratingStory(false);
+    }
+  }, [productImageFile, productName]);
+  
+  const handleDownloadClick = useCallback(async () => {
+    if (!storyRef.current) return;
+    try {
+      const canvas = await html2canvas(storyRef.current, {
+        useCORS: true,
+        backgroundColor: null,
+        scale: 2,
+        logging: false,
       });
+      const link = document.createElement('a');
+      link.download = `${productName.replace(/ /g, '_')}_story.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error("Failed to download image", err);
+      setError("لم نتمكن من تحميل الصورة. حاول مرة أخرى.");
+    }
+  }, [productName]);
+
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+    });
+
+  const createSelectAndSaveHandler = (
+    setLoading,
+    setResult,
+    storageKey,
+    assetName
+  ) => async (file) => {
+    if (!file) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setResult(dataUrl);
+      localStorage.setItem(storageKey, dataUrl);
+    } catch (err) {
+      console.error(`Error processing ${assetName}:`, err);
+      setError(`حدث خطأ أثناء معالجة ${assetName}. حاول مرة أخرى.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createClearHandler = (
+    setter,
+    storageKey
+  ) => () => {
+    setter(null);
+    localStorage.removeItem(storageKey);
+  };
+  
+  const handleLogoSelect = createSelectAndSaveHandler(setIsProcessingLogo, setProcessedLogo, 'bisha-market-logo', 'الشعار');
+  const handleQrCodeSelect = createSelectAndSaveHandler(setIsProcessingQrCode, setProcessedQrCode, 'bisha-market-qrcode', 'الباركود');
+  const handleClearLogo = createClearHandler(setProcessedLogo, 'bisha-market-logo');
+  const handleClearQrCode = createClearHandler(setProcessedQrCode, 'bisha-market-qrcode');
+
+  return (
+    React.createElement('div', { className: "min-h-screen bg-stone-900 text-stone-200 p-4 sm:p-8", style: { fontFamily: "'Tajawal', sans-serif" } },
+      React.createElement('div', { className: "max-w-6xl mx-auto" },
+        React.createElement('header', { className: "text-center mb-10 border-b border-stone-700 pb-4" },
+          React.createElement('h1', { className: "text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500" }, "مولّد قصص سوق بيشه"),
+          React.createElement('p', { className: "text-stone-400 mt-2" }, "صمم قصص انستغرام احترافية لمنتجاتك بضغطة زر")
+        ),
+        
+        React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12" },
+          React.createElement('div', { className: "bg-stone-800/50 p-6 rounded-2xl shadow-lg border border-stone-700 flex flex-col gap-6" },
+            React.createElement('div', null,
+              React.createElement('label', { className: "block text-lg font-semibold mb-2 text-amber-300" }, "1. ارفع صورة المنتج (مطلوب)"),
+              React.createElement(ImageUpload, { onImageSelect: setProductImageFile })
+            ),
+            
+            React.createElement('div', null,
+              React.createElement('label', { htmlFor: "productName", className: "block text-lg font-semibold mb-2 text-amber-300" }, "2. اكتب اسم المنتج (مطلوب)"),
+              React.createElement('input', {
+                id: "productName",
+                type: "text",
+                value: productName,
+                onChange: (e) => setProductName(e.target.value),
+                placeholder: "مثال: عسل سدر جبلي",
+                className: "w-full bg-stone-700 border border-stone-600 rounded-lg p-3 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition duration-200 text-white placeholder-stone-500"
+              })
+            ),
+
+            React.createElement('div', null,
+              React.createElement('label', { className: "block text-lg font-semibold mb-2 text-amber-300" }, "3. ارفع شعار المتجر (اختياري)"),
+              React.createElement('p', { className: "text-xs text-stone-400 mb-2 -mt-2" }, "سيتم حفظ الشعار تلقائياً للمرات القادمة."),
+              React.createElement(ImageUpload, { onImageSelect: handleLogoSelect, previewUrl: processedLogo, onClear: handleClearLogo, isLoading: isProcessingLogo })
+            ),
+
+            React.createElement('div', null,
+              React.createElement('label', { className: "block text-lg font-semibold mb-2 text-amber-300" }, "4. ارفع باركود الموقع (اختياري)"),
+              React.createElement('p', { className: "text-xs text-stone-400 mb-2 -mt-2" }, "سيتم حفظ الباركود تلقائياً للمرات القادمة."),
+              React.createElement(ImageUpload, { onImageSelect: handleQrCodeSelect, previewUrl: processedQrCode, onClear: handleClearQrCode, isLoading: isProcessingQrCode })
+            ),
+
+            React.createElement('button', {
+              onClick: handleGenerateClick,
+              disabled: isGeneratingStory || !productImageFile || !productName,
+              className: "w-full flex items-center justify-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-stone-900 font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg hover:from-amber-500 hover:to-yellow-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg mt-4"
+            },
+              isGeneratingStory ? (
+                React.createElement(React.Fragment, null,
+                  React.createElement(Loader, null),
+                  "جاري المعالجة..."
+                )
+              ) : (
+                React.createElement(React.Fragment, null,
+                  React.createElement(SparklesIcon, null),
+                  "إنشاء القصة"
+                )
+              )
+            ),
+            error && React.createElement('p', { className: "text-red-400 text-center" }, error)
+          ),
+          
+          React.createElement('div', { className: "bg-stone-800/50 p-4 rounded-2xl shadow-lg border border-stone-700 flex flex-col justify-center items-center min-h-[60vh] gap-4" },
+            isGeneratingStory ? (
+              React.createElement('div', { className: "flex flex-col items-center text-center text-stone-400" },
+                React.createElement(Loader, null),
+                React.createElement('p', { className: "mt-4 text-lg" }, "يقوم الذكاء الاصطناعي بإنشاء المشهد..."),
+                React.createElement('p', { className: "text-sm" }, "قد يستغرق هذا بضع لحظات.")
+              )
+            ) : (
+              React.createElement(React.Fragment, null,
+                React.createElement(StoryPreview, {
+                  ref: storyRef,
+                  productImage: processedProductImage,
+                  productName: productName,
+                  logoImage: processedLogo,
+                  qrCodeImage: processedQrCode
+                }),
+                processedProductImage && (
+                  React.createElement('button', {
+                    onClick: handleDownloadClick,
+                    className: "w-full max-w-xs mt-4 flex items-center justify-center gap-2 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-md"
+                  },
+                    React.createElement(DownloadIcon, null),
+                    "تحميل الصورة"
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+// --- START OF index.tsx ---
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  React.createElement(React.StrictMode, null,
+    React.createElement(App, null)
+  )
+);
     </script>
   </body>
 </html>
