@@ -55,7 +55,20 @@ function App() {
       setProcessedProductImage(`data:image/png;base64,${b64Data}`);
     } catch (err) {
       console.error(err);
-      setError('حدث خطأ أثناء إنشاء صورة المنتج. الرجاء المحاولة مرة أخرى.');
+      let userMessage = 'حدث خطأ أثناء إنشاء صورة المنتج. الرجاء المحاولة مرة أخرى.';
+      if (err instanceof Error) {
+        const lowerCaseMessage = err.message.toLowerCase();
+        // Check for specific keywords related to API key/authentication errors
+        if (lowerCaseMessage.includes('api key') || 
+            lowerCaseMessage.includes('permission denied') || 
+            lowerCaseMessage.includes('authentication') ||
+            lowerCaseMessage.includes('400') || // Bad Request, often due to bad key
+            lowerCaseMessage.includes('403')    // Forbidden
+           ) {
+            userMessage = 'فشل التحقق من مفتاح API. يرجى التأكد من أن مفتاح API الخاص بك تم إعداده بشكل صحيح في بيئة النشر (مثل GitHub Secrets).';
+        }
+      }
+      setError(userMessage);
     } finally {
       setIsGeneratingStory(false);
     }
