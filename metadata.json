@@ -1,0 +1,5 @@
+{
+  "name": "Bisha Market Story Generator",
+  "description": "An application to generate professional Instagram stories for products from Bisha Market. Users can upload a product image, name, and optional logo/QR code to create a visually appealing story with an automatically removed background.",
+  "requestFramePermissions": []
+}
